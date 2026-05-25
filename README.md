@@ -56,7 +56,7 @@ Two flavours are published:
 | PyQt6 | `>=6.11.0` | `>=6.11.0` | pip |
 | pyserial | `>=3.5` | `>=3.5` | pip |
 | esptool | - (system `PATH`) | `>=5.2.0` | pip |
-| esphome | - (system `PATH`) | `>=2026.5.0` | pip |
+| esphome | - (system `PATH`) | `>=2026.5.1` | pip |
 | platformio | - | bundled | transitive dependency of `esphome` |
 | `espota.py` | - (via `esphome`) | bundled | shim provided by the build script |
 | `addr2line` toolchains | system / user `~/.platformio` | user `~/.platformio` (populated on first compile) | not bundled - host-resolved at runtime |
