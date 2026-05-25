@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=ESP Flasher UI
+GenericName=ESP firmware flasher
+Comment=PyQt6 GUI wrapper for flashing ESP32 / ESP8266 modules via USB or OTA
+Exec=esp-flasher-ui
+Icon=esp-flasher-ui
+Categories=Development;Electronics;
+Terminal=false
+StartupNotify=true
+Keywords=ESP32;ESP8266;flash;firmware;esphome;esptool;OTA;

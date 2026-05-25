@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e2a3a"/>
+      <stop offset="100%" stop-color="#0c1320"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="32" fill="url(#bg)"/>
+  <!-- ESP module silhouette: PCB outline + antenna -->
+  <rect x="56" y="76" width="144" height="104" rx="6" fill="#1c8c5b" stroke="#0e5b3a" stroke-width="3"/>
+  <!-- shielding can -->
+  <rect x="72" y="92" width="88" height="64" rx="3" fill="#c4c8cc" stroke="#7a7f85" stroke-width="2"/>
+  <!-- antenna trace zig-zag -->
+  <polyline points="168,96 188,96 168,108 188,108 168,120 188,120 168,132 188,132 168,144 188,144 168,156"
+            fill="none" stroke="#c4c8cc" stroke-width="3" stroke-linejoin="miter"/>
+  <!-- pins -->
+  <g fill="#d4af37">
+    <rect x="64" y="180" width="6" height="14"/>
+    <rect x="80" y="180" width="6" height="14"/>
+    <rect x="96" y="180" width="6" height="14"/>
+    <rect x="112" y="180" width="6" height="14"/>
+    <rect x="128" y="180" width="6" height="14"/>
+    <rect x="144" y="180" width="6" height="14"/>
+    <rect x="160" y="180" width="6" height="14"/>
+    <rect x="176" y="180" width="6" height="14"/>
+  </g>
+  <!-- lightning / flash icon -->
+  <path d="M 120 60 L 90 130 L 118 130 L 102 196 L 162 116 L 130 116 Z"
+        fill="#ffd03a" stroke="#a37f00" stroke-width="3" stroke-linejoin="round"/>
+</svg>
