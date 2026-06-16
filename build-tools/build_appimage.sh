@@ -21,7 +21,7 @@ BUILD_ROOT="${REPO_ROOT}/build/${VARIANT}"
 APPDIR="${BUILD_ROOT}/AppDir"
 DIST="${REPO_ROOT}/dist"
 
-PBS_RELEASE="${PBS_RELEASE:-20260510}"
+PBS_RELEASE="${PBS_RELEASE:-20260610}"
 PBS_PY_VERSION="${PBS_PY_VERSION:-3.12.13}"
 PBS_TRIPLE="x86_64-unknown-linux-gnu"
 PBS_URL="https://github.com/astral-sh/python-build-standalone/releases/download/${PBS_RELEASE}/cpython-${PBS_PY_VERSION}+${PBS_RELEASE}-${PBS_TRIPLE}-install_only.tar.gz"

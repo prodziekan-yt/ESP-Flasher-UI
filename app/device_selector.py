@@ -1,9 +1,4 @@
-"""Shared USB / Network (OTA) device selector widget.
-
-Used by both flash tabs so the device is picked once. Emits
-`mode_changed` and `log`; provides `preflight_ota()` for warnings
-before launching an upload.
-"""
+"""Shared USB / Network (OTA) device selector widget."""
 from __future__ import annotations
 
 from PyQt6 import QtCore, QtWidgets

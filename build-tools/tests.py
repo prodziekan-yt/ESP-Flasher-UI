@@ -340,7 +340,7 @@ app = QApplication(sys.argv)
 window = MainWindow(i18n)
 
 check("window title", window.windowTitle() == "ESP Flasher UI")
-check("4 tabs", window.tabs.count() == 4)
+check("5 tabs", window.tabs.count() == 5)
 check("tab 0 = Flash ESPHome", window.tabs.tabText(0) == "Flash ESPHome")
 check("tab 1 = Flash .BIN", window.tabs.tabText(1) == "Flash .BIN")
 check("tab 2 = Read flash", window.tabs.tabText(2) == "Read flash")
@@ -1245,6 +1245,137 @@ i18n.set_language("en")
 check("erase button back to English", et.erase_button.text() == "Erase Flash")
 
 # ===================================================================
+print("=== bin_inspector (parser) ===")
+# ===================================================================
+import struct
+import tempfile
+
+from app.bin_inspector import (
+    BinReport,
+    chip_name,
+    format_plain_report,
+    hex_dump_lines,
+    parse_bin,
+    region_for_addr,
+    region_spans,
+)
+
+check("chip_name maps ESP32", chip_name(0x0000) == "ESP32")
+check("chip_name maps ESP32-S3", chip_name(0x0009) == "ESP32-S3")
+check("chip_name unknown id", "unknown chip_id" in chip_name(0xBEEF))
+
+check("region_for_addr ESP32 IRAM", region_for_addr(0x40090000, 0x0000).startswith("IRAM"))
+check("region_for_addr ESP32-S3 DROM", region_for_addr(0x3C001000, 0x0009).startswith("DROM"))
+check("region_for_addr unknown ⇒ 'unknown'", region_for_addr(0x12345678, 0x0000) == "unknown")
+
+_hdr = bytearray(24)
+_hdr[0] = 0xE9
+_hdr[1] = 1
+_hdr[2] = 2
+_hdr[3] = 0x20
+struct.pack_into("<I", _hdr, 4, 0x400D0020)
+struct.pack_into("<H", _hdr, 12, 0x0009)  # ESP32-S3
+_seg = struct.pack("<II", 0x3C001000, 256)
+_app = bytearray(256)
+_app[0:4] = struct.pack("<I", 0xABCD5432)
+_app[4:8] = struct.pack("<I", 7)
+_app[0x10:0x18] = b"2026.5.1"
+_app[0x30:0x3A] = b"esphome\x00\x00\x00"
+_app[0x50:0x59] = b"12:34:56\x00"
+_app[0x60:0x6B] = b"2026-05-25\x00"
+_app[0x70:0x77] = b"v5.4.0\x00"
+_app[0x90:0xB0] = bytes(range(32))
+
+_buf = bytearray(_hdr + _seg + bytes(_app))
+_pad = 15 - (len(_buf) % 16)
+_buf += bytes(_pad)
+_chk = 0xEF
+for _b in _app:
+    _chk ^= _b
+_buf.append(_chk)
+
+with tempfile.NamedTemporaryFile(suffix=".bin", delete=False) as _f:
+    _f.write(_buf)
+    _bin_path = _f.name
+
+_report = parse_bin(_bin_path)
+check("parse_bin returns BinReport", isinstance(_report, BinReport))
+check("magic_ok true", _report.magic_ok)
+check("chip_id parsed", _report.chip_id == 0x0009)
+check("chip name resolves to ESP32-S3", _report.chip_name == "ESP32-S3")
+check("segment_count==1", _report.segment_count == 1)
+check("entry_point parsed", _report.entry_point == 0x400D0020)
+check("app_desc parsed", _report.app_desc is not None)
+check("app_desc project=esphome", _report.app_desc.project_name == "esphome")
+check("app_desc version=2026.5.1", _report.app_desc.version == "2026.5.1")
+check("app_desc idf_ver=v5.4.0", _report.app_desc.idf_ver == "v5.4.0")
+check("app_desc secure_version=7", _report.app_desc.secure_version == 7)
+check("checksum_ok true", _report.checksum_ok is True)
+check("segments[0].region is DROM/IROM-ish", "DROM" in _report.segments[0].region or "IROM" in _report.segments[0].region)
+
+_plain = format_plain_report(_report)
+check("plain report mentions ESP32-S3", "ESP32-S3" in _plain)
+check("plain report mentions esphome project", "esphome" in _plain)
+check("plain report mentions checksum status", "checksum" in _plain.lower())
+
+_spans = region_spans(_report)
+check("region_spans includes header+ext", any(s.kind == "header" for s in _spans) and any(s.kind == "ext_header" for s in _spans))
+check("region_spans includes segment", any(s.kind == "segment" for s in _spans))
+check("region_spans includes app_desc", any(s.kind == "app_desc" for s in _spans))
+
+_hex_lines = hex_dump_lines(_buf, max_bytes=64)
+check("hex_dump_lines returns 4 rows for 64 bytes", len(_hex_lines) == 4)
+check("hex_dump_lines first row starts at 0x000000", _hex_lines[0][0] == 0 and "0x000000" in _hex_lines[0][1])
+
+with tempfile.NamedTemporaryFile(suffix=".bin", delete=False) as _f2:
+    _f2.write(b"\x00" * 64)
+    _bad_path = _f2.name
+_bad = parse_bin(_bad_path)
+check("non-magic file ⇒ magic_ok False", not _bad.magic_ok)
+check("non-magic file ⇒ warnings non-empty", bool(_bad.warnings))
+check("non-magic file plain report renders", "WARNING" in format_plain_report(_bad) or "warning" in format_plain_report(_bad).lower())
+
+os.unlink(_bin_path)
+os.unlink(_bad_path)
+
+# ===================================================================
+print("=== InspectBinTab ===")
+# ===================================================================
+from app.inspect_bin_tab import InspectBinTab, VIEW_PLAIN, VIEW_INTERACTIVE
+
+it = window.inspect_bin_tab
+check("inspect_bin_tab present", isinstance(it, InspectBinTab))
+check("inspect_bin_tab is 5th tab", window.tabs.indexOf(it) == 4)
+check("plain radio checked by default", it.view_plain_radio.isChecked())
+check("interactive radio unchecked", not it.view_interactive_radio.isChecked())
+check("stack defaults to plain view (index 0)", it.stack.currentIndex() == 0)
+check("current_view() returns plain", it.current_view() == VIEW_PLAIN)
+
+it.view_interactive_radio.setChecked(True)
+check("interactive radio toggles stack", it.stack.currentIndex() == 1)
+check("current_view() returns interactive", it.current_view() == VIEW_INTERACTIVE)
+check("detail label shown (not hidden) in interactive mode", not it.detail_label.isHidden())
+it.view_plain_radio.setChecked(True)
+check("plain radio switches back", it.stack.currentIndex() == 0)
+
+with tempfile.NamedTemporaryFile(suffix=".bin", delete=False) as _f3:
+    _f3.write(_buf)
+    _inspect_path = _f3.name
+it.set_bin_path(_inspect_path)
+check("plain view populated after parse", "ESP32-S3" in it.plain_view.toPlainText())
+it.view_interactive_radio.setChecked(True)
+check("hex view populated after parse", "0x000000" in it.interactive_view.toPlainText())
+check("hex view has colored selections", len(it.interactive_view.extraSelections()) > 0)
+os.unlink(_inspect_path)
+
+i18n.set_language("pl")
+check(
+    "inspect tab title localized to Polish",
+    window.tabs.tabText(window.tabs.indexOf(it)) == i18n.tr("tabs.inspect.title"),
+)
+i18n.set_language("en")
+
+# ===================================================================
 print("=== Dialout hint ===")
 # ===================================================================
 _reset_console_and_state()
@@ -1318,6 +1449,27 @@ read_keys = (
     "erase.button.desc",
     "erase.usb_only",
     "erase.starting",
+    "tabs.inspect.title",
+    "inspect.input_section",
+    "inspect.input_label",
+    "inspect.input_placeholder",
+    "inspect.browse",
+    "inspect.parse",
+    "inspect.dialog_title",
+    "inspect.dialog_filter",
+    "inspect.view_section",
+    "inspect.view_label",
+    "inspect.view.plain",
+    "inspect.view.interactive",
+    "inspect.legend",
+    "inspect.status_idle",
+    "inspect.no_file",
+    "inspect.read_error",
+    "inspect.parsed",
+    "inspect.no_report",
+    "inspect.detail_idle",
+    "inspect.detail_offset",
+    "inspect.detail_segment",
 )
 for key in read_keys:
     missing = [c for c, p in i18n._packs.items() if key not in p]

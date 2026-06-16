@@ -1,8 +1,4 @@
-"""Flash .BIN tab: firmware picker + Flash button.
-
-The device target is owned by the shared `DeviceSelector` widget at the
-`MainWindow` level; this tab only reads the current mode and host/port.
-"""
+"""Flash .BIN tab: firmware picker + Flash button (device owned by `DeviceSelector`)."""
 from __future__ import annotations
 
 from pathlib import Path

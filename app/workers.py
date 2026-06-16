@@ -1,8 +1,4 @@
-"""Background workers.
-
-* `DetectWorker` - non-blocking DNS resolve + TCP probe on ESPHome ports.
-* `FlashWorker` - QProcess wrapper that streams stdout/stderr line by line.
-"""
+"""Background workers: `DetectWorker` (OTA probe) + `FlashWorker` (QProcess wrapper)."""
 from __future__ import annotations
 
 import ipaddress
@@ -158,10 +154,7 @@ class FlashWorker(QObject):
         chip: str = "auto",
         baud: int | None = None,
     ) -> bool:
-        """Launch `esptool write-flash` on `device`.
-
-        `baud=None` uses esptool's default (no `--baud` flag).
-        """
+        """Launch `esptool write-flash` on `device`; `baud=None` skips `--baud`."""
         tool = shutil.which("esptool") or shutil.which("esptool.py")
         if not tool:
             return False
@@ -180,10 +173,7 @@ class FlashWorker(QObject):
         chip: str = "auto",
         baud: int | None = None,
     ) -> bool:
-        """Launch `esptool read-flash` to dump device flash to `output_path`.
-
-        `length=None` lets esptool detect the chip flash size and reads all of it.
-        """
+        """Launch `esptool read-flash` to `output_path`; `length=None` reads all flash."""
         tool = shutil.which("esptool") or shutil.which("esptool.py")
         if not tool:
             return False

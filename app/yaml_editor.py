@@ -20,7 +20,7 @@ def _fmt(color: str, *, bold: bool = False, italic: bool = False) -> QtGui.QText
 
 
 class YamlHighlighter(QtGui.QSyntaxHighlighter):
-    """Lightweight YAML highlighter - readable on light + dark themes."""
+    """Lightweight YAML highlighter."""
 
     _KEY = _fmt("#569cd6", bold=True)
     _STR = _fmt("#ce9178")
@@ -65,7 +65,7 @@ class YamlHighlighter(QtGui.QSyntaxHighlighter):
 
 
 class _YamlPlainTextEdit(QtWidgets.QPlainTextEdit):
-    """Plain text edit that can overlay a U+2591 (░) glyph on every space."""
+    """`QPlainTextEdit` that can overlay U+2591 (░) on every space."""
 
     _WS_GLYPH = "\u2591"
     _WS_COLOR = QtGui.QColor(128, 128, 128, 140)
@@ -212,7 +212,7 @@ class YamlEditor(QtWidgets.QWidget):
         self._refresh_title()
 
     def load(self, path: str) -> bool:
-        """Load YAML file content; returns True on success."""
+        """Read `path` into the editor; returns True on success."""
         try:
             text = Path(path).read_text(encoding="utf-8")
         except OSError as exc:

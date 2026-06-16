@@ -1,9 +1,4 @@
-"""Read ESPHome's per-device manifests from `.esphome/storage/*.yaml.json`.
-
-Each manifest holds name, friendly name, OTA address, build path, firmware
-bin and loaded integrations. This module exposes them as `KnownDevice`
-records used to populate the "Known devices" dropdown.
-"""
+"""Read ESPHome's per-device manifests from `.esphome/storage/*.yaml.json`."""
 from __future__ import annotations
 
 import json
@@ -36,11 +31,7 @@ class KnownDevice:
 
 
 def discover_known_devices(project_dir: str | Path) -> list[KnownDevice]:
-    """List devices recorded under `<project_dir>/.esphome/storage/`.
-
-    Missing storage directory or malformed manifests yield an empty list
-    (no exception raised).
-    """
+    """`KnownDevice`s under `<project_dir>/.esphome/storage/`; never raises."""
     project = Path(project_dir)
     storage = project / ".esphome" / "storage"
     if not storage.is_dir():
@@ -57,7 +48,6 @@ def discover_known_devices(project_dir: str | Path) -> list[KnownDevice]:
         if not name:
             continue
 
-        # Storage filename pattern: `<yaml_name>.yaml.json` -> strip `.json`.
         yaml_candidate = project / json_path.name.removesuffix(".json")
         bin_path = data.get("firmware_bin_path") or ""
 

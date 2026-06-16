@@ -1,8 +1,4 @@
-"""i18n manager backed by `app/translations/<code>.json` files.
-
-Each pack contains a `_meta` block plus flat `key -> string` pairs.
-New packs are auto-discovered on startup; no code change required.
-"""
+"""i18n manager backed by `app/translations/<code>.json` files."""
 from __future__ import annotations
 
 import json

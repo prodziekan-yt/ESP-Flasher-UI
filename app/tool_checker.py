@@ -1,7 +1,4 @@
-"""Dependency checks rendered as a `[V]`/`[X]` checklist in the console.
-
-Each entry uses i18n keys so the output is localized at render time.
-"""
+"""Dependency checks rendered as a `[V]`/`[X]` checklist in the console."""
 from __future__ import annotations
 
 import os
@@ -12,11 +9,7 @@ from importlib.metadata import PackageNotFoundError, version as _pkg_version_raw
 
 
 def pkg_version(pkg: str) -> str:
-    """Installed version of a Python package, or empty string if missing.
-
-    Uses `importlib.metadata` instead of parsing `--version` CLI output, which
-    Click-based tools (e.g. esptool 5.x) don't reliably implement.
-    """
+    """Installed version of a Python package, or empty string if missing."""
     try:
         return _pkg_version_raw(pkg)
     except PackageNotFoundError:
@@ -158,11 +151,7 @@ def _check_esphome() -> ToolStatus:
 
 
 def _check_dialout() -> ToolStatus:
-    """Verify `dialout` membership in both `/etc/group` and the live process.
-
-    Static-only membership means the user joined the group but hasn't logged
-    out yet, which is the most common cause of "permission denied" on /dev/tty*.
-    """
+    """`dialout` membership in `/etc/group` and the live process (catches stale sessions)."""
     import getpass
 
     user = getpass.getuser()

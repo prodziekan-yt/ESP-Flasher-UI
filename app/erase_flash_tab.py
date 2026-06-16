@@ -1,4 +1,4 @@
-"""Erase flash tab: full flash wipe via `esptool erase_flash` with a confirm gate."""
+"""Erase flash tab: full flash wipe via `esptool erase-flash` with a confirm gate."""
 from __future__ import annotations
 
 from PyQt6 import QtCore, QtGui, QtWidgets

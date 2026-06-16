@@ -1,9 +1,4 @@
-"""Offline ESPHome stack trace decoder.
-
-Pairs a crash backtrace with the matching `firmware.elf` from the last
-local compile and resolves every hex address via PlatformIO's `addr2line`
-binary (falling back to system `addr2line`).
-"""
+"""Offline ESPHome stack trace decoder (addr2line against the local firmware.elf)."""
 from __future__ import annotations
 
 import re
@@ -15,11 +10,10 @@ from PyQt6 import QtGui, QtWidgets
 from .i18n import I18n
 
 
-# 6-8 digit hex addresses (ESPHome traces use 8, ESP8266 RAM sometimes 6).
+# 6-8 digit hex addresses.
 _HEX_RE = re.compile(r"0x[0-9a-fA-F]{6,8}")
 
-# ELF e_machine -> candidate addr2line binaries in priority order.
-# Each toolchain matches a specific ESP chip family.
+# ELF e_machine -> addr2line binary candidates, in priority order.
 _MACHINE_TO_ADDR2LINE: dict[str, tuple[str, ...]] = {
     "xtensa": (
         "xtensa-esp32s3-elf-addr2line",
@@ -95,10 +89,7 @@ def read_elf_machine(elf_path: str) -> str:
 
 
 def find_addr2line_binaries(machine: str) -> list[str]:
-    """`addr2line` binaries under `~/.platformio/packages` matching `machine`.
-
-    Falls back to system `addr2line` when no PlatformIO toolchain is present.
-    """
+    """`addr2line` binaries for `machine` (PlatformIO toolchain, then system PATH)."""
     names = _MACHINE_TO_ADDR2LINE.get(machine, ())
     pio_root = Path.home() / ".platformio" / "packages"
     found: list[str] = []
@@ -129,11 +120,7 @@ def extract_addresses(text: str) -> list[str]:
 
 
 def decode_trace(elf_path: str, text: str) -> tuple[str, int]:
-    """Decode hex addresses from `text` against `elf_path`.
-
-    Returns `(decoded_text, n_resolved)`. `decoded_text` is ready for display;
-    `n_resolved` counts addresses that resolved to a real symbol.
-    """
+    """Decode hex addresses from `text` against `elf_path`; returns (decoded, n_resolved)."""
     if not Path(elf_path).is_file():
         raise FileNotFoundError(elf_path)
     addrs = extract_addresses(text)
@@ -168,8 +155,7 @@ def decode_trace(elf_path: str, text: str) -> tuple[str, int]:
         if not output_lines:
             continue
 
-        # `-i` may yield multiple lines per address (inlined frames); group
-        # them by walking the output once.
+        # `-i` may yield multiple lines per address (inlined frames).
         addr_iter = iter(addrs)
         current_addr: str | None = next(addr_iter, None)
         for ln in output_lines:

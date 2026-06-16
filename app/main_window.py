@@ -1,10 +1,4 @@
-"""Top-level QMainWindow.
-
-Composes the language switcher, shared device selector, tab widget
-(`FlashEsphomeTab` + `FlashBinTab`), global action row and console.
-Tabs emit `log` and `flash_state_changed`; this class forwards them
-into the console and toggles the Stop button.
-"""
+"""Top-level QMainWindow: language switcher, device selector, tabs, console."""
 from __future__ import annotations
 
 import os
@@ -20,6 +14,7 @@ from .flash_bin_tab import FlashBinTab
 from .flash_esphome_tab import FlashEsphomeTab
 from .i18n import I18n
 from .erase_flash_tab import EraseFlashTab
+from .inspect_bin_tab import InspectBinTab
 from .read_flash_tab import ReadFlashTab
 from .text_utils import (
     LEVEL_CMD,
@@ -36,7 +31,7 @@ from .workers import FlashWorker
 from .yaml_editor import YamlEditor
 
 
-# Color palette for console line classification (readable on light + dark themes).
+# Console line colors per log level.
 LEVEL_COLORS: dict[str, QtGui.QColor] = {
     LEVEL_DIM: QtGui.QColor(140, 140, 140),
     LEVEL_CMD: QtGui.QColor(86, 156, 214),
@@ -152,10 +147,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.erase_flash_tab = EraseFlashTab(
             self.i18n, self.flash_worker, self.device_selector
         )
+        self.inspect_bin_tab = InspectBinTab(self.i18n)
         self.tabs.addTab(self.flash_esphome_tab, "")
         self.tabs.addTab(self.flash_bin_tab, "")
         self.tabs.addTab(self.read_flash_tab, "")
         self.tabs.addTab(self.erase_flash_tab, "")
+        self.tabs.addTab(self.inspect_bin_tab, "")
         root.addWidget(self.tabs)
 
         # ---- global actions
@@ -210,6 +207,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.read_flash_tab.flash_state_changed.connect(self._on_flash_state_changed)
         self.erase_flash_tab.log.connect(self._log)
         self.erase_flash_tab.flash_state_changed.connect(self._on_flash_state_changed)
+        self.inspect_bin_tab.log.connect(self._log)
 
         self.yaml_editor.log.connect(self._log)
         self.yaml_editor.close_requested.connect(self._on_editor_close)
@@ -252,6 +250,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.tabs.setTabText(1, tr("tabs.bin.title"))
         self.tabs.setTabText(2, tr("tabs.read.title"))
         self.tabs.setTabText(3, tr("tabs.erase.title"))
+        self.tabs.setTabText(4, tr("tabs.inspect.title"))
 
         self.stop_button.setText(tr("actions.stop"))
         self.diag_button.setText(tr("actions.diagnostics"))
@@ -341,8 +340,7 @@ class MainWindow(QtWidgets.QMainWindow):
                 self._log(self.i18n.tr(i18n_key))
 
     def _check_decode_hint(self, line: str) -> None:
-        # "Found stack trace! Trying to decode it" arms the watch; a follow-up
-        # "WARNING Decoded ..." means success, anything else means missing ELF.
+        # Trigger arms watch; "WARNING Decoded" = success, anything else = missing ELF.
         if self._decode_hint_shown:
             return
         if _DECODE_FOUND_TRIGGER in line:
@@ -364,8 +362,7 @@ class MainWindow(QtWidgets.QMainWindow):
             return
         op_label = self._operation_label(self.flash_worker.operation)
         self._log(self.i18n.tr("op.stopped", op=op_label))
-        # Flag must be set before stop(): waitForFinished() pumps events and
-        # can fire _on_flash_finished synchronously.
+        # Set before stop(): stop() can fire _on_flash_finished synchronously.
         self._user_stopped = True
         self.flash_worker.stop()
 

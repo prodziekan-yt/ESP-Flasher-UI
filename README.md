@@ -18,6 +18,7 @@ PyQt6 GUI for flashing ESP32 / ESP8266 modules via USB or OTA.
 - **Flash .BIN tab** - pick a raw firmware binary and push it to the device.
 - **Read flash tab** - USB-only flash dump to a local `.bin` (full backup, app-only or bootloader presets, custom offset + length, chip auto-detect).
 - **Erase flash tab** - rescue bricked modules with `esptool erase-flash` behind a confirmation checkbox that auto-unchecks after every click.
+- **Inspect .BIN tab** - offline parser for ESP firmware images: image + extended header, segment table with load addresses + resolved memory regions for ESP32 / S2 / S3 / C3 / C6 / H2 / P4, `esp_app_desc_t` metadata (project, version, build date, ESP-IDF, ELF SHA256), XOR checksum + appended SHA256 validation, strings-of-interest extractor (hostnames, URIs, IDF / ESPHome version markers). Switchable between **Plain** (text report) and **Interactive** (colour-coded hex dump; cursor resolves byte → region + segment + load address).
 - **Shared device selector** - USB/Serial or Network (OTA), used by all tabs.
 - **OTA detection** - DNS resolve + TCP probe on ESPHome ports (6053, 3232, 8266) with private/public IP classification.
 - **Known devices** - auto-discovers ESPHome manifests from `.esphome/storage/*.yaml.json`.
@@ -52,11 +53,11 @@ Two flavours are published:
 
 | Component | Light | Full | Source |
 |---|:---:|:---:|---|
-| CPython | `3.12.13` (pinned) | `3.12.13` (pinned) | `python-build-standalone` release `20260510` |
+| CPython | `3.12.13` (pinned) | `3.12.13` (pinned) | `python-build-standalone` release `20260610` |
 | PyQt6 | `>=6.11.0` | `>=6.11.0` | pip |
 | pyserial | `>=3.5` | `>=3.5` | pip |
 | esptool | - (system `PATH`) | `>=5.2.0` | pip |
-| esphome | - (system `PATH`) | `>=2026.5.1` | pip |
+| esphome | - (system `PATH`) | `>=2026.5.3` | pip |
 | platformio | - | bundled | transitive dependency of `esphome` |
 | `espota.py` | - (via `esphome`) | bundled | shim provided by the build script |
 | `addr2line` toolchains | system / user `~/.platformio` | user `~/.platformio` (populated on first compile) | not bundled - host-resolved at runtime |
@@ -112,7 +113,7 @@ Click **Diagnostic** after launch - the bottom section lists every required tool
 QT_QPA_PLATFORM=offscreen python build-tools/tests.py
 ```
 
-Headless offline test suite (~370 checks) covering i18n integrity (37 packs, `_meta` consistency, placeholder consistency), workers, console classifier and `>> ` prefix, stack decoder with ELF prioritization, hint detection, Quick View/Edit panel, Read / Erase / Reset operations with their safety guards, and a GUI smoke test for every tab.
+Headless offline test suite (441 checks) covering i18n integrity (37 packs, `_meta` consistency, placeholder consistency), workers, console classifier and `>> ` prefix, stack decoder with ELF prioritization, hint detection, Quick View/Edit panel, Read / Erase / Reset operations with their safety guards, the `.bin` parser (header / extended header / segments / `esp_app_desc_t` / checksum / SHA256 / region resolution) and the Inspect .BIN tab plain ↔ interactive toggle, and a GUI smoke test for every tab.
 
 ---
 
@@ -130,6 +131,7 @@ ESP Flasher UI is a thin wrapper - all flashing is delegated to external CLI too
 | Erase flash | `esptool --port <dev> [--baud <rate>] erase-flash` | `esptool` |
 | Reset ESP | `esptool --port <dev> [--baud <rate>] --no-stub chip-id` (DTR/RTS dance + hard reset on exit) | `esptool` |
 | OTA detection | DNS resolve + TCP probe on ports 6053 / 3232 / 8266 | - |
+| Inspect .BIN | offline parser - reads the file, walks `esp_image_header_t` + `esp_app_desc_t`, validates checksum + SHA256 | - (no external tool) |
 | Stack decoding | `<toolchain>-addr2line -e firmware.elf -f -p -i -C <addresses>` | PlatformIO toolchain or system `addr2line` |
 
 ---
@@ -216,6 +218,18 @@ Last-resort rescue for bricked modules that no longer boot or accept new firmwar
 4. Click **Erase Flash**. The checkbox auto-unchecks immediately so a second device cannot be wiped by reflex.
 
 After erase, the device will not boot until you flash firmware again (use the Flash .BIN or Flash ESPHome tab).
+
+### Inspect .BIN (offline)
+
+Decode any ESP firmware image without a device attached. Accepts a freshly compiled `firmware.bin`, a Read-flash dump, bootloader / partition-table images, or any ESP-IDF / ESPHome app image.
+
+1. Open the **Inspect .BIN** tab.
+2. Click **Browse...**, pick a `.bin`, then **Parse**.
+3. Switch between view modes:
+   - **Plain** - text report: image header, segment table with resolved memory regions, `esp_app_desc_t` (project, version, build date, ESP-IDF, ELF SHA256), XOR checksum + appended SHA256 validation, deduplicated strings of interest.
+   - **Interactive** - colour-coded hex dump of the first 1 KB; each region (header / ext header / segment / `esp_app_desc_t` / SHA256 footer) gets its own tint. The detail strip resolves the byte under the cursor: file offset, byte value, region name, segment index + load address.
+
+The parser tolerates corrupt / non-ESP input - bad files produce a best-effort report with warnings instead of a crash.
 
 ### Reset ESP (USB only)
 

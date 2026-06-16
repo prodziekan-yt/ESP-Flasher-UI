@@ -1,10 +1,4 @@
-"""Flash ESPHome tab.
-
-Drives `esphome <subcommand>` on a YAML config (validate / compile / upload /
-run / logs / clean). The "Known devices" dropdown lists ESPHome's per-device
-manifests under `<project_dir>/.esphome/storage/*.yaml.json`. A successful
-compile / run enables the "Send to Flash .BIN" bridge.
-"""
+"""Flash ESPHome tab: drives `esphome <subcommand>` on a YAML config."""
 from __future__ import annotations
 
 import re
@@ -20,14 +14,13 @@ from .ui_utils import make_muted_label
 from .workers import FlashWorker
 
 
-# Subcommands that need a connected device (USB path or OTA host).
+# Subcommands needing a connected device (USB or OTA).
 DEVICE_BOUND_ACTIONS = frozenset({"upload", "run", "logs"})
 
-# Subcommands that implicitly run YAML validation; trigger pre-flight hints.
+# Subcommands that implicitly run YAML validation.
 VALIDATING_ACTIONS = frozenset({"config", "compile", "upload", "run"})
 
-# Plain-text scan for `level: VERY_VERBOSE` or `log_level: VERY_VERBOSE`.
-# Avoids YAML parsing because configs commonly use !include / !secret tags.
+# Plain-text scan: configs commonly use !include / !secret which break YAML parsers.
 _VERY_VERBOSE_RE = re.compile(
     r"^\s*(log_level|level)\s*:\s*VERY_VERBOSE\b", re.MULTILINE
 )
@@ -137,7 +130,7 @@ class FlashEsphomeTab(QtWidgets.QWidget):
 
         root.addWidget(self.actions_box)
 
-        # Secondary tools row, laid out as button + caption to match the grid above.
+        # Secondary tools row.
         extras = QtWidgets.QGridLayout()
         extras.setHorizontalSpacing(8)
         extras.setVerticalSpacing(2)
@@ -395,11 +388,7 @@ class FlashEsphomeTab(QtWidgets.QWidget):
         self.flash_state_changed.emit(True)
 
     def _maybe_warn_verbose_logger(self, yaml_path: str) -> None:
-        """Warn once if the YAML sets logger level to VERY_VERBOSE.
-
-        That level can slow the device and break connectivity; recommended
-        only for short debugging sessions.
-        """
+        """Warn once if the YAML sets logger level to VERY_VERBOSE."""
         try:
             text = Path(yaml_path).read_text(encoding="utf-8", errors="ignore")
         except OSError:

@@ -1,8 +1,4 @@
-"""USB serial port discovery.
-
-Uses `pyserial` when available (rich metadata). Falls back to globbing
-`/dev/ttyACM*` / `/dev/ttyUSB*` on Linux when pyserial is missing.
-"""
+"""USB serial port discovery (pyserial when available, else /dev/tty* glob)."""
 from __future__ import annotations
 
 import glob
@@ -26,11 +22,7 @@ class SerialDevice:
 
 
 def list_serial_devices(usb_only: bool = True) -> list[SerialDevice]:
-    """List detected serial devices.
-
-    With `usb_only=True` (default) the platform UARTs (e.g. `/dev/ttyS*`) are
-    filtered out so only USB-attached adapters are returned.
-    """
+    """Detected serial devices; `usb_only` filters out platform UARTs like `/dev/ttyS*`."""
     try:
         import serial.tools.list_ports  # type: ignore[import-untyped]
     except ImportError:
